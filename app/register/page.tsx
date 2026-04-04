@@ -13,7 +13,10 @@ import {
   ArrowRight,
   Loader2,
   AlertCircle,
-  ChevronDown
+  ChevronDown,
+  Menu,
+  X,
+  CheckCircle2
 } from "lucide-react";
 
 /* ---------------- TYPES ---------------- */
@@ -38,69 +41,87 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`fixed w-full z-50 transition ${
+      className={`fixed w-full z-50 transition-all duration-500 ${
         isScrolled
-          ? "bg-white shadow-md py-4"
-          : "bg-transparent py-8"
+          ? "bg-white/80 backdrop-blur-lg shadow-lg py-3"
+          : "bg-transparent py-6"
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-        <Link href="/" className="font-bold text-xl">
-          Eternal <span className="text-blue-600">Support</span>
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="w-10 h-10 bg-[#0F8FA3] rounded-xl flex items-center justify-center text-white font-black rotate-3 group-hover:rotate-12 transition-transform">
+            E
+          </div>
+          <span className="font-black text-2xl tracking-tighter text-slate-800">
+            Eternal <span className="text-[#0F8FA3]">Support</span>
+          </span>
         </Link>
 
-        <div className="hidden lg:flex gap-10 items-center">
-          <Link href="/">Home</Link>
+        {/* Desktop Nav */}
+        <div className="hidden lg:flex gap-8 items-center font-bold text-sm uppercase tracking-widest text-slate-600">
+          <Link href="/" className="hover:text-[#0F8FA3] transition">Home</Link>
 
           <div
             onMouseEnter={() => setDropdown(true)}
             onMouseLeave={() => setDropdown(false)}
-            className="relative"
+            className="relative cursor-pointer"
           >
-            <button className="flex items-center gap-2">
+            <span className="flex items-center gap-1 hover:text-[#0F8FA3] transition">
               Services <ChevronDown size={14} />
-            </button>
+            </span>
 
             <AnimatePresence>
               {dropdown && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute bg-white shadow-lg rounded-xl p-4 mt-2 w-56"
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute bg-white border border-slate-100 shadow-2xl rounded-2xl p-4 mt-4 w-64 overflow-hidden"
                 >
-                  <p>In-Home Support</p>
-                  <p>Transport</p>
-                  <p>Aged Care</p>
+                  {["In-Home Support", "Transport", "Aged Care", "Social Inclusion"].map((item) => (
+                    <div key={item} className="p-3 hover:bg-slate-50 rounded-lg transition text-slate-700 normal-case font-semibold cursor-pointer">
+                      {item}
+                    </div>
+                  ))}
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          <Link href="/about">About</Link>
+          <Link href="/about" className="hover:text-[#0F8FA3] transition">About</Link>
 
           <Link href="/register">
-            <button className="bg-black text-white px-6 py-2 rounded-full">
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-slate-900 text-white px-8 py-3 rounded-full shadow-lg shadow-slate-200"
+            >
               Get Started
-            </button>
+            </motion.button>
           </Link>
         </div>
 
-        <button
-          className="lg:hidden"
-          onClick={() => setMobileOpen(!mobileOpen)}
-        >
-          ☰
+        {/* Mobile Toggle */}
+        <button className="lg:hidden text-slate-800" onClick={() => setMobileOpen(!mobileOpen)}>
+          {mobileOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
 
-      {mobileOpen && (
-        <div className="bg-white p-6 flex flex-col gap-6 lg:hidden">
-          <Link href="/">Home</Link>
-          <Link href="/about">About</Link>
-          <Link href="/register">Register</Link>
-        </div>
-      )}
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-white border-t border-slate-100 p-6 flex flex-col gap-6 lg:hidden shadow-xl"
+          >
+            <Link href="/" className="font-bold text-lg">Home</Link>
+            <Link href="/about" className="font-bold text-lg">About</Link>
+            <Link href="/register" className="bg-[#0F8FA3] text-white p-4 rounded-xl text-center font-bold">Get Started</Link>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 };
@@ -108,41 +129,25 @@ const Navbar = () => {
 /* ---------------- MAIN COMPONENT ---------------- */
 export default function RegisterPage() {
   const router = useRouter();
-
-  const [form, setForm] = useState<FormData>({
-    name: "",
-    email: "",
-    password: "",
-    phone: ""
-  });
-
+  const [form, setForm] = useState<FormData>({ name: "", email: "", password: "", phone: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
-  /* ---------------- HANDLE INPUT ---------------- */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    setError("");
+    if (error) setError("");
   };
 
-  /* ---------------- VALIDATION ---------------- */
   const validate = () => {
-    if (!form.name || !form.email || !form.password)
-      return "Please fill all required fields";
-
-    if (!/\S+@\S+\.\S+/.test(form.email))
-      return "Invalid email format";
-
-    if (form.password.length < 6)
-      return "Password must be at least 6 characters";
-
+    if (!form.name || !form.email || !form.password) return "All fields with * are required.";
+    if (!/\S+@\S+\.\S+/.test(form.email)) return "That email address doesn't look right.";
+    if (form.password.length < 6) return "Password needs to be at least 6 characters.";
     return "";
   };
 
-  /* ---------------- SUBMIT ---------------- */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const validationError = validate();
     if (validationError) {
       setError(validationError);
@@ -151,136 +156,155 @@ export default function RegisterPage() {
 
     try {
       setLoading(true);
-
-      const res = await axios.post(
-        "https://eternal-support.onrender.com/api/users",
-        {
-          name: form.name,
-          email: form.email,
-          password: form.password,
-          phone: form.phone,
-          role: "user"
-        }
-      );
-
-      console.log(res.data);
-
-      alert("✅ Registered Successfully");
-
-      router.push("/login");
-
+      await axios.post("https://eternal-support.onrender.com/api/users", { ...form, role: "user" });
+      setSuccess(true);
+      setTimeout(() => router.push("/login"), 2000);
     } catch (err: any) {
-      console.error(err.response?.data || err.message);
-      setError("Registration failed");
+      setError("Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  /* ---------------- UI ---------------- */
   return (
-    <>
+    <div className="min-h-screen relative overflow-hidden bg-slate-50">
       <Navbar />
 
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 pt-28">
+      {/* Background Colorful Blobs */}
+      <div className="absolute top-0 -left-20 w-96 h-96 bg-[#0F8FA3]/10 rounded-full blur-[100px]" />
+      <div className="absolute bottom-0 -right-20 w-96 h-96 bg-purple-500/10 rounded-full blur-[100px]" />
+
+      <div className="relative flex items-center justify-center min-h-screen pt-20 px-4">
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="bg-white p-10 rounded-2xl shadow-xl w-full max-w-md"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-xl bg-white/70 backdrop-blur-xl p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-white"
         >
-          <h2 className="text-2xl font-bold text-center mb-6">
-            Create Account
-          </h2>
+          {success ? (
+            <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-center py-10">
+              <div className="flex justify-center mb-6">
+                <CheckCircle2 size={80} className="text-[#0F8FA3]" />
+              </div>
+              <h2 className="text-3xl font-black text-slate-800">Welcome Aboard!</h2>
+              <p className="text-slate-500 mt-2 font-medium text-lg">Your account has been created. Redirecting to login...</p>
+            </motion.div>
+          ) : (
+            <>
+              <div className="mb-10">
+                <h2 className="text-4xl font-black text-slate-800 tracking-tight">Create Account</h2>
+                <p className="text-slate-500 mt-2 font-medium">Join Eternal Support Services today.</p>
+              </div>
 
-          <AnimatePresence>
-            {error && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="bg-red-100 text-red-600 p-3 mb-4 rounded"
-              >
-                {error}
-              </motion.div>
-            )}
-          </AnimatePresence>
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="bg-red-50 text-red-600 p-4 mb-6 rounded-2xl flex items-center gap-3 border border-red-100 text-sm font-bold"
+                  >
+                    <AlertCircle size={20} />
+                    {error}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Name */}
-            <div className="relative">
-              <User className="absolute left-3 top-3 text-gray-400" />
-              <input
-                type="text"
-                name="name"
-                placeholder="Full Name"
-                value={form.name}
-                onChange={handleChange}
-                className="w-full pl-10 p-3 border rounded"
-              />
-            </div>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="grid md:grid-cols-2 gap-5">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Full Name</label>
+                    <div className="relative group">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#0F8FA3] transition-colors" size={20} />
+                      <input
+                        type="text"
+                        name="name"
+                        placeholder="John Doe"
+                        value={form.name}
+                        onChange={handleChange}
+                        className="w-full pl-12 p-4 bg-white border border-slate-100 rounded-2xl focus:ring-4 focus:ring-[#0F8FA3]/10 focus:border-[#0F8FA3] outline-none transition-all font-semibold"
+                      />
+                    </div>
+                  </div>
 
-            {/* Email */}
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 text-gray-400" />
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={form.email}
-                onChange={handleChange}
-                className="w-full pl-10 p-3 border rounded"
-              />
-            </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Phone</label>
+                    <div className="relative group">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#0F8FA3] transition-colors" size={20} />
+                      <input
+                        type="text"
+                        name="phone"
+                        placeholder="+1 234..."
+                        value={form.phone}
+                        onChange={handleChange}
+                        className="w-full pl-12 p-4 bg-white border border-slate-100 rounded-2xl focus:ring-4 focus:ring-[#0F8FA3]/10 focus:border-[#0F8FA3] outline-none transition-all font-semibold"
+                      />
+                    </div>
+                  </div>
+                </div>
 
-            {/* Phone */}
-            <div className="relative">
-              <Phone className="absolute left-3 top-3 text-gray-400" />
-              <input
-                type="text"
-                name="phone"
-                placeholder="Phone"
-                value={form.phone}
-                onChange={handleChange}
-                className="w-full pl-10 p-3 border rounded"
-              />
-            </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Email Address</label>
+                  <div className="relative group">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#0F8FA3] transition-colors" size={20} />
+                    <input
+                      type="email"
+                      name="email"
+                      placeholder="name@company.com"
+                      value={form.email}
+                      onChange={handleChange}
+                      className="w-full pl-12 p-4 bg-white border border-slate-100 rounded-2xl focus:ring-4 focus:ring-[#0F8FA3]/10 focus:border-[#0F8FA3] outline-none transition-all font-semibold"
+                    />
+                  </div>
+                </div>
 
-            {/* Password */}
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 text-gray-400" />
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                value={form.password}
-                onChange={handleChange}
-                className="w-full pl-10 p-3 border rounded"
-              />
-            </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Password</label>
+                  <div className="relative group">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#0F8FA3] transition-colors" size={20} />
+                    <input
+                      type="password"
+                      name="password"
+                      placeholder="Minimum 6 characters"
+                      value={form.password}
+                      onChange={handleChange}
+                      className="w-full pl-12 p-4 bg-white border border-slate-100 rounded-2xl focus:ring-4 focus:ring-[#0F8FA3]/10 focus:border-[#0F8FA3] outline-none transition-all font-semibold"
+                    />
+                  </div>
+                </div>
 
-            {/* Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 rounded flex justify-center items-center gap-2"
-            >
-              {loading ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <>
-                  Register <ArrowRight size={16} />
-                </>
-              )}
-            </button>
-          </form>
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[#0F8FA3] hover:bg-slate-900 text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-[#0F8FA3]/20 transition-all flex justify-center items-center gap-3 mt-4"
+                >
+                  {loading ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <>
+                      Create My Account <ArrowRight size={20} />
+                    </>
+                  )}
+                </motion.button>
+              </form>
 
-          <p className="text-center mt-6 text-sm">
-            Already have an account?{" "}
-            <Link href="/login" className="text-blue-600">
-              Login
-            </Link>
-          </p>
+              <p className="text-center mt-8 font-bold text-slate-400 uppercase text-[10px] tracking-[0.2em]">
+                By joining, you agree to our Terms and Conditions
+              </p>
+
+              <div className="mt-8 pt-8 border-t border-slate-100 text-center">
+                <p className="font-semibold text-slate-500">
+                  Already a member?{" "}
+                  <Link href="/login" className="text-[#0F8FA3] hover:underline font-black">
+                    Login here
+                  </Link>
+                </p>
+              </div>
+            </>
+          )}
         </motion.div>
       </div>
-    </>
+    </div>
   );
 }
